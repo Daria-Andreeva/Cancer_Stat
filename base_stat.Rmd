@@ -1,0 +1,210 @@
+---
+title: "Base stat"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Пакеты
+
+```{r}
+library(readr)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+setwd("~/Bioinf/statistics_r/data/cancer/data")
+data <- read_csv("all_data.csv")
+#Доля определенной возрастной группы в идеальной популяции
+ASR <- read_csv("ASR_1.csv")
+
+general_pmi <- read_csv("general_pmi.csv")
+year_rate_fem <- read_csv("year_rate_fem.csv")
+year_rate_male <- read_csv("general_pmi_male.csv")
+Age_rate <- read_csv("Age_rate.csv")
+```
+
+##Меняем тип вектора на факторы
+```{r}
+data$Type <- as.factor(data$Type)
+data$Sex <- as.factor(data$Sex)
+data$Age <- as.factor(data$Age)
+```
+
+``` {r}
+#новый датасет длинного типа
+mortality <- filter(data, Type == 'mortality')
+population <- filter(data, Type == 'population')
+incidence <- filter(data, Type == 'incidence')
+mor_pop <- bind_cols(mortality, population[,c(2,5)], incidence[,c(2,5)])
+mor_pop <- mor_pop[,c(1:5, 7, 10, 12, 15)]
+summary(mor_pop)
+summary(mortality)
+summary(population)
+summary(incidence)
+```
+
+###### Базовая статистика
+Мы не можем посчитать риск, поскольку нужен follow-up.
+
+Анализ распределения смертности
+```{r}
+qq_mortality <- ggplot(mortality, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of observations \naccording to Rings number",
+       y = "Rings") +
+theme_classic()
+
+density_mortality <- ggplot(mortality, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_mortality <- ggplot(mortality, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_mortality <- grid.arrange(qq_mortality, density_mortality,
+                           box_mortality, ncol = 2)
+```
+
+Анализ распределения incidence
+```{r}
+qq_incidence <- ggplot(incidence, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of incidence",
+       y = "incidence") +
+theme_classic()
+
+density_incidence <- ggplot(incidence, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_incidence <- ggplot(incidence, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_incidence <- grid.arrange(qq_incidence, density_incidence,
+                           box_incidence, ncol = 2)
+```
+
+Связь между заболеваемостью и возрастом
+```{r}
+pl <- ggplot(data = general_pmi, aes(y = incidence , x = Age)) + #incidence
+  geom_density() 
+
+pl <- ggplot(data = mor_pop, aes(y = mor_pop$Amount...9 , x = Age)) + #incidence
+  geom_density() + 
+ facet_grid(.~Sex)
+  
+pl_2 <- ggplot(data = mor_pop, aes(x = mor_pop$Amount...9, y = Age)) + #incidence
+  geom_smooth() + 
+ facet_grid(.~Sex)
+
+#cor.test(mor_pop, Amount...9 ~Age, method="spearman") - ругается, что вектора разной длины
+
+#age_mod <- lm(formula = Amount...9 ~ Age, data = mor_pop)
+#summary(age_mod)
+
+```
+
+###Скорректированные по возрасту коэффициенты заболеваемости (AAIR) стандартизированная смертность 
+```{r}
+# стандартизированная смертность на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Mort_rate <- (mor_pop$Amount...5/mor_pop$Amount...7*100000)
+
+mor_pop$Mort_rate_st <- mor_pop$Mort_rate * ASR$Rate
+# с учетом коэффициента
+#стандартизированная заболеваемость на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Incid_rate <- (mor_pop$Amount...9/mor_pop$Amount...7*100000)
+# с учетом коэффициента
+mor_pop$Incid_rate_st <- mor_pop$Incid_rate * ASR$Rate
+```
+### Point prevalence (точечная распространенность)
+#Point prevalence
+```{r}
+#in general
+general_pmi$p_prevalence <- general_pmi$Incidence/general_pmi$Population
+
+#female
+year_rate_fem$p_prevalence <- year_rate_fem$Incidence/year_rate_fem$Population
+
+#male
+year_rate_male$p_prevalence <- year_rate_male$Incidence/year_rate_male$Population
+```
+Risk - это не настоящий риск, тот считается в человеко-годах
+```{r}
+gen_risk <- sum(general_pmi$Incidence) / sum(general_pmi$Population)
+fem_risk <- sum(year_rate_fem$Incidence) / sum(year_rate_fem$Population)
+m_risk <- sum(year_rate_male$Incidence) / sum(year_rate_male$Population)
+```
+
+Odds of disease
+```{r}
+gen_odds <- sum(general_pmi$Incidence) / sum((general_pmi$Population - sum(general_pmi$Incidence)))
+fem_odds <- sum(year_rate_fem$Incidence) / sum((year_rate_fem$Population - sum(year_rate_fem$Incidence)))
+m_odds <- sum(year_rate_male$Incidence) / sum((year_rate_male$Population - sum(year_rate_male$Incidence)))
+```
+
+Plot mortality depending on year
+```{r}
+
+# графики смертность на 100 000 человек, без учета возрастного коэффициента
+plot_mort <- ggplot(mor_pop, aes(x = Year, y = Mort_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex) +
+  theme_minimal()
+
+plot_mort_st <- ggplot(mor_pop, aes(x = Year, y = Mort_rate_st, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+plot_mort_st <- ggplot(mor_pop, aes(x = Year, y = Mort_rate_st, colour = Age)) +
+  geom_smooth() + facet_grid(.~Sex)+
+  theme_minimal()
+plot_mort
+```
+
+Графики заболеваемости и смертности на 100 000 человек
+```{r}
+# графики заболеваемости на 100 000 человек, без учета возрастного коэффициента
+plot_incid <- ggplot(mor_pop, aes(x = Year, y = Incid_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+# графики заболеваемости на 100 000 человек, с учетом возрастного коэффициента
+plot_incid_st <- ggplot(mor_pop, aes(x = Year, y = Incid_rate_st, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+```
+Death rate
+```{r}
+mor_pop$death_rate <- (mor_pop$Amount...5) / (mor_pop$Amount...9) #mortality/incidence
+mor_pop[is.character(mor_pop)] <- 0
+
+plot_death_rate <- ggplot(mor_pop, aes(x = Year, y = death_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)
+
+plot_death_rate <- ggplot(mor_pop, aes(x = Year, y = death_rate)) +
+  geom_boxplot() + facet_grid(.~Age)
+
+
+```

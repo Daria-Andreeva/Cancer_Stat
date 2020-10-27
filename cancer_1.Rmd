@@ -1,0 +1,1395 @@
+---
+title: Эпидемиология рака пищевода
+subtitle: часть 1
+author: "А.Д. Андреева"
+date: "`r format(Sys.Date(), format = '%d.%m.%Y')`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+# Настройки R и knitr ----------------------------
+# опции R
+options(width = 70, scipen = 16, digits = 3) 
+# опции чанков по умолчанию
+knitr::opts_chunk$set(tidy = FALSE, # сохранять форматирование кода
+               fig.width = 4.5, # ширина рисунков по умолчанию
+               fig.height = 3)  # высота рисунков по умолчанию
+```
+
+## Пакеты
+
+```{r}
+library(readr)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+setwd("~/Bioinf/statistics_r/data/cancer/data")
+data <- read_csv("all_data.csv")
+#Доля определенной возрастной группы в идеальной популяции
+ASR <- read_csv("ASR_1.csv")
+
+str(ASR)
+```
+
+Change structure
+```{r}
+
+data$Type <- as.factor(data$Type)
+data$Sex <- as.factor(data$Sex)
+data$Age <- as.factor(data$Age)
+
+
+```
+Summary
+``` {r}
+
+
+mortality <- filter(data, Type == 'mortality')
+population <- filter(data, Type == 'population')
+incidence <- filter(data, Type == 'incidence')
+mor_pop <- bind_cols(mortality, population[,c(2,5)], incidence[,c(2,5)])
+mor_pop <- mor_pop[,c(1:5, 7, 10, 12, 15)]
+summary(mor_pop)
+summary(mortality)
+summary(population)
+summary(incidence)
+```
+
+Мы не можем посчитать риск, поскольку нужен follow-up.
+
+Анализ распределения смертности
+```{r}
+qq_mortality <- ggplot(mortality, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of observations \naccording to Rings number",
+       y = "Rings") +
+theme_classic()
+
+density_mortality <- ggplot(mortality, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_mortality <- ggplot(mortality, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_mortality <- grid.arrange(qq_mortality, density_mortality,
+                           box_mortality, ncol = 2)
+```
+
+Анализ распределения incidence
+```{r}
+qq_incidence <- ggplot(incidence, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of observations \naccording to Rings number",
+       y = "Rings") +
+theme_classic()
+
+density_incidence <- ggplot(incidence, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_incidence <- ggplot(incidence, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_incidence <- grid.arrange(qq_incidence, density_incidence,
+                           box_incidence, ncol = 2)
+```
+
+Связь между заболеваемостью и возрастом
+```{r}
+pl <- ggplot(data = general_pmi, aes(y = incidence , x = Age)) + #incidence
+  geom_density() 
+
+pl <- ggplot(data = mor_pop, aes(y = mor_pop$Amount...9 , x = Age)) + #incidence
+  geom_density() + 
+ facet_grid(.~Sex)
+  
+pl_2 <- ggplot(data = mor_pop, aes(x = mor_pop$Amount...9, y = Age)) + #incidence
+  geom_smooth() + 
+ facet_grid(.~Sex)
+
+cor.test(mor_pop, Amount...9 ~Age, method="spearman")
+
+age_mod <- lm(formula = Amount...9 ~ Age, data = mor_pop)
+summary(age_mod)
+
+```
+
+# сделаем дата-сет, в которому посчитаем суммарную популяцию, смертность и заболеваемость по возрасту
+# общая популяция
+```{r}
+sum(mor_pop$Amount...7) #3030420898
+
+a_10004 <- filter(mor_pop, Age == 10004 & Type...6 == 'population')
+sum(a_10004$Amount...7) #148145911
+a_10509 <- filter(mor_pop, Age == 10509 & Type...6 == 'population')
+sum(a_10509$Amount...7) #148145911
+a_11014 <- filter(mor_pop, Age == 11014 & Type...6 == 'population')
+sum(a_11014$Amount...7)
+
+a_11519 <- filter(mor_pop, Age == 11519 & Type...6 == 'population')
+sum(a_11519$Amount...7)
+
+a_12024 <- filter(mor_pop, Age == 12024 & Type...6 == 'population')
+sum(a_12024$Amount...7)
+
+a_12529 <- filter(mor_pop, Age == 12529 & Type...6 == 'population')
+sum(a_12529$Amount...7)
+
+a_13034 <- filter(mor_pop, Age == 13034 & Type...6 == 'population')
+sum(a_13034$Amount...7)
+
+a_13539 <- filter(mor_pop, Age == 13539 & Type...6 == 'population')
+sum(a_13539$Amount...7)
+
+a_14044 <- filter(mor_pop, Age == 14044 & Type...6 == 'population')
+sum(a_14044$Amount...7)
+
+a_14549 <- filter(mor_pop, Age == 14549 & Type...6 == 'population')
+sum(a_14549$Amount...7)
+
+a_15054 <- filter(mor_pop, Age == 15054 & Type...6 == 'population')
+sum(a_15054$Amount...7)
+
+a_15559 <- filter(mor_pop, Age == 15559 & Type...6 == 'population')
+sum(a_15559$Amount...7)
+
+a_16064 <- filter(mor_pop, Age == 16064 & Type...6 == 'population')
+sum(a_16064$Amount...7)
+
+a_16569 <- filter(mor_pop, Age == 16569 & Type...6 == 'population')
+sum(a_16569$Amount...7)
+
+a_17074 <- filter(mor_pop, Age == 17074 & Type...6 == 'population')
+sum(a_17074$Amount...7)
+
+a_17579 <- filter(mor_pop, Age == 17579 & Type...6 == 'population')
+sum(a_17579$Amount...7)
+
+a_18084 <- filter(mor_pop, Age == 18084 & Type...6 == 'population')
+sum(a_18084$Amount...7)
+
+a_18500 <- filter(mor_pop, Age == 18500 & Type...6 == 'population')
+sum(a_18500$Amount...7)
+
+Age_rate <- data_frame(Age = unique(mor_pop$Age),
+                       Population = c(sum(a_10004$Amount...7),
+                                      sum(a_10509$Amount...7),
+                                      sum(a_11014$Amount...7),
+                                      sum(a_11519$Amount...7),
+                                      sum(a_12024$Amount...7),
+                                      sum(a_12529$Amount...7),
+                                      sum(a_13034$Amount...7),
+                                      sum(a_13539$Amount...7),
+                                      sum(a_14044$Amount...7),
+                                      sum(a_14549$Amount...7),
+                                      sum(a_15054$Amount...7),
+                                      sum(a_15559$Amount...7),
+                                      sum(a_16064$Amount...7),
+                                      sum(a_16569$Amount...7),
+                                      sum(a_17074$Amount...7),
+                                      sum(a_17579$Amount...7),
+                                      sum(a_18084$Amount...7),
+                                      sum(a_18500$Amount...7)
+                                      ))
+
+```
+mor
+```{r}
+sum(mor_pop$Amount...5) #3030420898
+
+a_10004 <- filter(mor_pop, Age == 10004 & Type...2 == 'mortality')
+sum(a_10004$Amount...5) #148145911
+a_10509 <- filter(mor_pop, Age == 10509 & Type...2 == 'mortality')
+sum(a_10509$Amount...5) #148145911
+a_11014 <- filter(mor_pop, Age == 11014 & Type...2 == 'mortality')
+sum(a_11014$Amount...5)
+
+a_11519 <- filter(mor_pop, Age == 11519 & Type...2 == 'mortality')
+sum(a_11519$Amount...5)
+
+a_12024 <- filter(mor_pop, Age == 12024 & Type...2 == 'mortality')
+sum(a_12024$Amount...5)
+
+a_12529 <- filter(mor_pop, Age == 12529 & Type...2 == 'mortality')
+sum(a_12529$Amount...5)
+
+a_13034 <- filter(mor_pop, Age == 13034 & Type...2 == 'mortality')
+sum(a_13034$Amount...5)
+
+a_13539 <- filter(mor_pop, Age == 13539 & Type...2 == 'mortality')
+sum(a_13539$Amount...5)
+
+a_14044 <- filter(mor_pop, Age == 14044 & Type...2 == 'mortality')
+sum(a_14044$Amount...5)
+
+a_14549 <- filter(mor_pop, Age == 14549 & Type...2 == 'mortality')
+sum(a_14549$Amount...5)
+
+a_15054 <- filter(mor_pop, Age == 15054 & Type...2 == 'mortality')
+sum(a_15054$Amount...5)
+
+a_15559 <- filter(mor_pop, Age == 15559 & Type...2 == 'mortality')
+sum(a_15559$Amount...5)
+
+a_16064 <- filter(mor_pop, Age == 16064 & Type...2 == 'mortality')
+sum(a_16064$Amount...5)
+
+a_16569 <- filter(mor_pop, Age == 16569 & Type...2 == 'mortality')
+sum(a_16569$Amount...5)
+
+a_17074 <- filter(mor_pop, Age == 17074 & Type...2 == 'mortality')
+sum(a_17074$Amount...5)
+
+a_17579 <- filter(mor_pop, Age == 17579 & Type...2 == 'mortality')
+sum(a_17579$Amount...5)
+
+a_18084 <- filter(mor_pop, Age == 18084 & Type...2 == 'mortality')
+sum(a_18084$Amount...5)
+
+a_18500 <- filter(mor_pop, Age == 18500 & Type...2 == 'mortality')
+sum(a_18500$Amount...5)
+
+Age_rate$Mortality = c(sum(a_10004$Amount...5),
+                                      sum(a_10509$Amount...5),
+                                      sum(a_11014$Amount...5),
+                                      sum(a_11519$Amount...5),
+                                      sum(a_12024$Amount...5),
+                                      sum(a_12529$Amount...5),
+                                      sum(a_13034$Amount...5),
+                                      sum(a_13539$Amount...5),
+                                      sum(a_14044$Amount...5),
+                                      sum(a_14549$Amount...5),
+                                      sum(a_15054$Amount...5),
+                                      sum(a_15559$Amount...5),
+                                      sum(a_16064$Amount...5),
+                                      sum(a_16569$Amount...5),
+                                      sum(a_17074$Amount...5),
+                                      sum(a_17579$Amount...5),
+                                      sum(a_18084$Amount...5),
+                                      sum(a_18500$Amount...5)
+                                      )
+
+```
+inc
+```{r}
+sum(mor_pop$Amount...9) #3030420898
+
+a_10004 <- filter(mor_pop, Age == 10004 & Type...8 == 'incidence')
+sum(a_10004$Amount...9) #148145911
+a_10509 <- filter(mor_pop, Age == 10509 & Type...8 == 'incidence')
+sum(a_10509$Amount...9) #148145911
+a_11014 <- filter(mor_pop, Age == 11014 & Type...8 == 'incidence')
+sum(a_11014$Amount...9)
+
+a_11519 <- filter(mor_pop, Age == 11519 & Type...8 == 'incidence')
+sum(a_11519$Amount...9)
+
+a_12024 <- filter(mor_pop, Age == 12024 & Type...8 == 'incidence')
+sum(a_12024$Amount...9)
+
+a_12529 <- filter(mor_pop, Age == 12529 & Type...8 == 'incidence')
+sum(a_12529$Amount...9)
+
+a_13034 <- filter(mor_pop, Age == 13034 & Type...8 == 'incidence')
+sum(a_13034$Amount...9)
+
+a_13539 <- filter(mor_pop, Age == 13539 & Type...8 == 'incidence')
+sum(a_13539$Amount...9)
+
+a_14044 <- filter(mor_pop, Age == 14044 & Type...8 == 'incidence')
+sum(a_14044$Amount...9)
+
+a_14549 <- filter(mor_pop, Age == 14549 & Type...8 == 'incidence')
+sum(a_14549$Amount...9)
+
+a_15054 <- filter(mor_pop, Age == 15054 & Type...8 == 'incidence')
+sum(a_15054$Amount...9)
+
+a_15559 <- filter(mor_pop, Age == 15559 & Type...8 == 'incidence')
+sum(a_15559$Amount...9)
+
+a_16064 <- filter(mor_pop, Age == 16064 & Type...8 == 'incidence')
+sum(a_16064$Amount...9)
+
+a_16569 <- filter(mor_pop, Age == 16569 & Type...8 == 'incidence')
+sum(a_16569$Amount...9)
+
+a_17074 <- filter(mor_pop, Age == 17074 & Type...8 == 'incidence')
+sum(a_17074$Amount...9)
+
+a_17579 <- filter(mor_pop, Age == 17579 & Type...8 == 'incidence')
+sum(a_17579$Amount...9)
+
+a_18084 <- filter(mor_pop, Age == 18084 & Type...8 == 'incidence')
+sum(a_18084$Amount...9)
+
+a_18500 <- filter(mor_pop, Age == 18500 & Type...8 == 'incidence')
+sum(a_18500$Amount...9)
+
+Age_rate$Incidence = c(sum(a_10004$Amount...9),
+                                      sum(a_10509$Amount...9),
+                                      sum(a_11014$Amount...9),
+                                      sum(a_11519$Amount...9),
+                                      sum(a_12024$Amount...9),
+                                      sum(a_12529$Amount...9),
+                                      sum(a_13034$Amount...9),
+                                      sum(a_13539$Amount...9),
+                                      sum(a_14044$Amount...9),
+                                      sum(a_14549$Amount...9),
+                                      sum(a_15054$Amount...9),
+                                      sum(a_15559$Amount...9),
+                                      sum(a_16064$Amount...9),
+                                      sum(a_16569$Amount...9),
+                                      sum(a_17074$Amount...9),
+                                      sum(a_17579$Amount...9),
+                                      sum(a_18084$Amount...9),
+                                      sum(a_18500$Amount...9)
+                                      )
+
+```
+
+Построим модели:
+```{r}
+cor.test(Age_rate, x =Age_rate$Incidence, y = Age_rate$Age)
+
+Age_rate$Age <- as.character(Age_rate$Age)
+ggplot(Age_rate, aes(x = Age, y = Incidence, group = 1)) +
+  geom_point() +
+  geom_line()
+
+mod_1 <- lm(x = Incidence, y = Age, data = Age_rate)
+summary(mod_1) #Adjusted R-squared:  0.6774
+
+mod_2 <- lm(formula = Amount...9 ~ Age + Sex, data = mor_pop)
+summary(mod_2) #Adjusted R-squared:  0.6761
+
+
+age_mod <- lm(formula = Amount...9 ~ Age, data = mor_pop)
+summary(age_mod) #Adjusted R-squared:  0.5585
+
+mod_predicted <- predict(mod_2, interval='prediction')
+mod_predicted <- data.frame(mor_pop, mod_predicted)
+
+plot_pred <- ggplot(mor_pop, aes(x = Age, y = Incid_rate_st, colour = Year)) +
+  geom_smooth(method = "lm", aes(fill = "Conf.interval"), alpha = 0.4) + 
+  facet_grid(.~Sex) +
+  geom_ribbon(data = mod_predicted,  aes(ymin = lwr, ymax = upr, fill = "Conf. area for prediction"), alpha = 0.2) +
+  scale_fill_manual(name = "Intervals", values = c("green", "gray")) 
+```
+
+
+стандартизированная смертность
+```{r}
+# стандартизированная смертность на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Mort_rate <- (mor_pop$Amount...5/mor_pop$Amount...7*100000)
+
+mor_pop$Mort_rate_st <- mor_pop$Mort_rate * ASR$Rate
+# с учетом коэффициента
+#стандартизированная заболеваемость на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Incid_rate <- (mor_pop$Amount...9/mor_pop$Amount...7*100000)
+# с учетом коэффициента
+mor_pop$Incid_rate_st <- mor_pop$Incid_rate * ASR$Rate
+```
+#########Point prevalence (точечная распространенность)
+```{r}
+sum(mor_pop$Amount...7) #3030420898
+
+a_10004 <- filter(mor_pop, Age == 10004 & Type...2 == 'mortality')
+sum(a_10004$Amount...7) #148145911
+a_10509 <- filter(mor_pop, Age == 10509 & Type...6 == 'population')
+sum(a_10509$Amount...7) #148145911
+a_11014 <- filter(mor_pop, Age == 11014 & Type...6 == 'population')
+sum(a_11014$Amount...7)
+
+a_11519 <- filter(mor_pop, Age == 11519 & Type...6 == 'population')
+sum(a_11519$Amount...7)
+
+a_12024 <- filter(mor_pop, Age == 12024 & Type...6 == 'population')
+sum(a_12024$Amount...7)
+
+a_12529 <- filter(mor_pop, Age == 12529 & Type...6 == 'population')
+sum(a_12529$Amount...7)
+
+a_13034 <- filter(mor_pop, Age == 13034 & Type...6 == 'population')
+sum(a_13034$Amount...7)
+
+a_13539 <- filter(mor_pop, Age == 13539 & Type...6 == 'population')
+sum(a_13539$Amount...7)
+
+a_14044 <- filter(mor_pop, Age == 14044 & Type...6 == 'population')
+sum(a_14044$Amount...7)
+
+a_14549 <- filter(mor_pop, Age == 14549 & Type...6 == 'population')
+sum(a_14549$Amount...7)
+
+a_15054 <- filter(mor_pop, Age == 15054 & Type...6 == 'population')
+sum(a_15054$Amount...7)
+
+a_15559 <- filter(mor_pop, Age == 15559 & Type...6 == 'population')
+sum(a_15559$Amount...7)
+
+a_16064 <- filter(mor_pop, Age == 16064 & Type...6 == 'population')
+sum(a_16064$Amount...7)
+
+a_16569 <- filter(mor_pop, Age == 16569 & Type...6 == 'population')
+sum(a_16569$Amount...7)
+
+a_17074 <- filter(mor_pop, Age == 17074 & Type...6 == 'population')
+sum(a_17074$Amount...7)
+
+a_17579 <- filter(mor_pop, Age == 17579 & Type...6 == 'population')
+sum(a_17579$Amount...7)
+
+a_18084 <- filter(mor_pop, Age == 18084 & Type...6 == 'population')
+sum(a_18084$Amount...7)
+
+a_18500 <- filter(mor_pop, Age == 18500 & Type...6 == 'population')
+sum(a_18500$Amount...7)
+
+Age_rate <- data_frame(Age = unique(mor_pop$Age),
+                       Population = c(sum(a_10004$Amount...7),
+                                      sum(a_10509$Amount...7),
+                                      sum(a_11014$Amount...7),
+                                      sum(a_11519$Amount...7),
+                                      sum(a_12024$Amount...7),
+                                      sum(a_12529$Amount...7),
+                                      sum(a_13034$Amount...7),
+                                      sum(a_13539$Amount...7),
+                                      sum(a_14044$Amount...7),
+                                      sum(a_14549$Amount...7),
+                                      sum(a_15054$Amount...7),
+                                      sum(a_15559$Amount...7),
+                                      sum(a_16064$Amount...7),
+                                      sum(a_16569$Amount...7),
+                                      sum(a_17074$Amount...7),
+                                      sum(a_17579$Amount...7),
+                                      sum(a_18084$Amount...7),
+                                      sum(a_18500$Amount...7)
+                                      ))
+```
+
+
+``` {r}
+# сделаем дата-сет, в которому посчитаем суммарную популяцию, смертность и заболеваемость за каждый год
+
+# общая популяция
+sum(mor_pop$Amount...7) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...6 == 'population')
+sum(y_1993$Amount...7) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...6 == 'population')
+sum(y_1994$Amount...7) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...6 == 'population')
+sum(y_1995$Amount...7)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...6 == 'population')
+sum(y_1996$Amount...7)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...6 == 'population')
+sum(y_1997$Amount...7)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...6 == 'population')
+sum(y_1998$Amount...7)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...6 == 'population')
+sum(y_1999$Amount...7)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...6 == 'population')
+sum(y_2000$Amount...7)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...6 == 'population')
+sum(y_2001$Amount...7)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...6 == 'population')
+sum(y_2002$Amount...7)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...6 == 'population')
+sum(y_2003$Amount...7)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...6 == 'population')
+sum(y_2004$Amount...7)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...6 == 'population')
+sum(y_2005$Amount...7)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...6 == 'population')
+sum(y_2006$Amount...7)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...6 == 'population')
+sum(y_2007$Amount...7)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...6 == 'population')
+sum(y_2008$Amount...7)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...6 == 'population')
+sum(y_2009$Amount...7)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...6 == 'population')
+sum(y_2010$Amount...7)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...6 == 'population')
+sum(y_2011$Amount...7)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...6 == 'population')
+sum(y_2012$Amount...7)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...6 == 'population')
+sum(y_2013$Amount...7)
+
+year_rate <- data_frame(Year = c(1993:2013),
+                       Population = c(sum(y_1993$Amount...7),
+                                      sum(y_1994$Amount...7),
+                                      sum(y_1995$Amount...7),
+                                      sum(y_1996$Amount...7),
+                                      sum(y_1997$Amount...7),
+                                      sum(y_1998$Amount...7),
+                                      sum(y_1999$Amount...7),
+                                      sum(y_2000$Amount...7),
+                                      sum(y_2001$Amount...7),
+                                      sum(y_2002$Amount...7),
+                                      sum(y_2003$Amount...7),
+                                      sum(y_2004$Amount...7),
+                                      sum(y_2005$Amount...7),
+                                      sum(y_2006$Amount...7),
+                                      sum(y_2007$Amount...7),
+                                      sum(y_2008$Amount...7),
+                                      sum(y_2009$Amount...7),
+                                      sum(y_2010$Amount...7),
+                                      sum(y_2011$Amount...7),
+                                      sum(y_2012$Amount...7),
+                                      sum(y_2013$Amount...7)
+                                      ))
+
+
+
+```
+смертность
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...5) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...2 == 'mortality')
+sum(y_1993$Amount...5) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...2 == 'mortality')
+sum(y_1994$Amount...5) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...2 == 'mortality')
+sum(y_1995$Amount...5)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...2 == 'mortality')
+sum(y_1996$Amount...5)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...2 == 'mortality')
+sum(y_1997$Amount...5)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...2 == 'mortality')
+sum(y_1998$Amount...5)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...2 == 'mortality')
+sum(y_1999$Amount...5)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...2 == 'mortality')
+sum(y_2000$Amount...5)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...2 == 'mortality')
+sum(y_2001$Amount...5)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...2 == 'mortality')
+sum(y_2002$Amount...5)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...2 == 'mortality')
+sum(y_2003$Amount...5)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...2 == 'mortality')
+sum(y_2004$Amount...5)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...2 == 'mortality')
+sum(y_2005$Amount...5)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...2 == 'mortality')
+sum(y_2006$Amount...5)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...2 == 'mortality')
+sum(y_2007$Amount...5)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...2 == 'mortality')
+sum(y_2008$Amount...5)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...2 == 'mortality')
+sum(y_2009$Amount...5)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...2 == 'mortality')
+sum(y_2010$Amount...5)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...2 == 'mortality')
+sum(y_2011$Amount...5)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...2 == 'mortality')
+sum(y_2012$Amount...5)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...2 == 'mortality')
+sum(y_2013$Amount...5)
+
+year_rate$Mortality <- c(sum(y_1993$Amount...5),
+                                      sum(y_1994$Amount...5),
+                                      sum(y_1995$Amount...5),
+                                      sum(y_1996$Amount...5),
+                                      sum(y_1997$Amount...5),
+                                      sum(y_1998$Amount...5),
+                                      sum(y_1999$Amount...5),
+                                      sum(y_2000$Amount...5),
+                                      sum(y_2001$Amount...5),
+                                      sum(y_2002$Amount...5),
+                                      sum(y_2003$Amount...5),
+                                      sum(y_2004$Amount...5),
+                                      sum(y_2005$Amount...5),
+                                      sum(y_2006$Amount...5),
+                                      sum(y_2007$Amount...5),
+                                      sum(y_2008$Amount...5),
+                                      sum(y_2009$Amount...5),
+                                      sum(y_2010$Amount...5),
+                                      sum(y_2011$Amount...5),
+                                      sum(y_2012$Amount...5),
+                                      sum(y_2013$Amount...5)
+                                      )
+```
+количество заболевших
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...9) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...8 == 'incidence')
+sum(y_1993$Amount...9) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...8 == 'incidence')
+sum(y_1994$Amount...9) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...8 == 'incidence')
+sum(y_1995$Amount...9)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...8 == 'incidence')
+sum(y_1996$Amount...9)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...8 == 'incidence')
+sum(y_1997$Amount...9)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...8 == 'incidence')
+sum(y_1998$Amount...9)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...8 == 'incidence')
+sum(y_1999$Amount...9)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...8 == 'incidence')
+sum(y_2000$Amount...9)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...8 == 'incidence')
+sum(y_2001$Amount...9)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...8 == 'incidence')
+sum(y_2002$Amount...9)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...8 == 'incidence')
+sum(y_2003$Amount...9)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...8 == 'incidence')
+sum(y_2004$Amount...9)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...8 == 'incidence')
+sum(y_2005$Amount...9)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...8 == 'incidence')
+sum(y_2006$Amount...9)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...8 == 'incidence')
+sum(y_2007$Amount...9)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...8 == 'incidence')
+sum(y_2008$Amount...9)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...8 == 'incidence')
+sum(y_2009$Amount...9)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...8 == 'incidence')
+sum(y_2010$Amount...9)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...8 == 'incidence')
+sum(y_2011$Amount...9)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...8 == 'incidence')
+sum(y_2012$Amount...9)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...8 == 'incidence')
+sum(y_2013$Amount...9)
+
+year_rate$Incidence <- c(sum(y_1993$Amount...9),
+                                      sum(y_1994$Amount...9),
+                                      sum(y_1995$Amount...9),
+                                      sum(y_1996$Amount...9),
+                                      sum(y_1997$Amount...9),
+                                      sum(y_1998$Amount...9),
+                                      sum(y_1999$Amount...9),
+                                      sum(y_2000$Amount...9),
+                                      sum(y_2001$Amount...9),
+                                      sum(y_2002$Amount...9),
+                                      sum(y_2003$Amount...9),
+                                      sum(y_2004$Amount...9),
+                                      sum(y_2005$Amount...9),
+                                      sum(y_2006$Amount...9),
+                                      sum(y_2007$Amount...9),
+                                      sum(y_2008$Amount...9),
+                                      sum(y_2009$Amount...9),
+                                      sum(y_2010$Amount...9),
+                                      sum(y_2011$Amount...9),
+                                      sum(y_2012$Amount...9),
+                                      sum(y_2013$Amount...9)
+                                      )
+
+```
+Сохраним получившийся датасет
+```{r}
+write_csv(year_rate, year_rate.csv)
+
+```
+
+# сделаем дата-сет, в котором посчитаем суммарную популяцию, смертность и заболеваемость за каждый год для Ж
+популяция
+``` {r}
+# сделаем дата-сет, в которому посчитаем суммарную популяцию, смертность и заболеваемость за каждый год
+
+# общая популяция
+
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...6 == 'population' & Sex == 'fem')
+sum(y_1993$Amount...7) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1994$Amount...7) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1995$Amount...7)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1996$Amount...7)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1997$Amount...7)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1998$Amount...7)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...6 == 'population'& Sex == 'fem')
+sum(y_1999$Amount...7)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2000$Amount...7)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2001$Amount...7)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2002$Amount...7)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2003$Amount...7)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2004$Amount...7)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2005$Amount...7)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2006$Amount...7)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2007$Amount...7)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2008$Amount...7)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2009$Amount...7)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2010$Amount...7)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2011$Amount...7)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2012$Amount...7)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...6 == 'population'& Sex == 'fem')
+sum(y_2013$Amount...7)
+
+year_rate_fem <- data_frame(Year = c(1993:2013), Sex = "fem",
+                       Population = c(sum(y_1993$Amount...7),
+                                      sum(y_1994$Amount...7),
+                                      sum(y_1995$Amount...7),
+                                      sum(y_1996$Amount...7),
+                                      sum(y_1997$Amount...7),
+                                      sum(y_1998$Amount...7),
+                                      sum(y_1999$Amount...7),
+                                      sum(y_2000$Amount...7),
+                                      sum(y_2001$Amount...7),
+                                      sum(y_2002$Amount...7),
+                                      sum(y_2003$Amount...7),
+                                      sum(y_2004$Amount...7),
+                                      sum(y_2005$Amount...7),
+                                      sum(y_2006$Amount...7),
+                                      sum(y_2007$Amount...7),
+                                      sum(y_2008$Amount...7),
+                                      sum(y_2009$Amount...7),
+                                      sum(y_2010$Amount...7),
+                                      sum(y_2011$Amount...7),
+                                      sum(y_2012$Amount...7),
+                                      sum(y_2013$Amount...7)
+                                      ))
+
+
+
+```
+смертность
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...5) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...2 == 'mortality' & Sex == 'fem')
+sum(y_1993$Amount...5) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1994$Amount...5) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1995$Amount...5)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1996$Amount...5)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1997$Amount...5)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1998$Amount...5)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_1999$Amount...5)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2000$Amount...5)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2001$Amount...5)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2002$Amount...5)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2003$Amount...5)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2004$Amount...5)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2005$Amount...5)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2006$Amount...5)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2007$Amount...5)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2008$Amount...5)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2009$Amount...5)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2010$Amount...5)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2011$Amount...5)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2012$Amount...5)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...2 == 'mortality'& Sex == 'fem')
+sum(y_2013$Amount...5)
+
+year_rate_fem$Mortality <- c(sum(y_1993$Amount...5),
+                                      sum(y_1994$Amount...5),
+                                      sum(y_1995$Amount...5),
+                                      sum(y_1996$Amount...5),
+                                      sum(y_1997$Amount...5),
+                                      sum(y_1998$Amount...5),
+                                      sum(y_1999$Amount...5),
+                                      sum(y_2000$Amount...5),
+                                      sum(y_2001$Amount...5),
+                                      sum(y_2002$Amount...5),
+                                      sum(y_2003$Amount...5),
+                                      sum(y_2004$Amount...5),
+                                      sum(y_2005$Amount...5),
+                                      sum(y_2006$Amount...5),
+                                      sum(y_2007$Amount...5),
+                                      sum(y_2008$Amount...5),
+                                      sum(y_2009$Amount...5),
+                                      sum(y_2010$Amount...5),
+                                      sum(y_2011$Amount...5),
+                                      sum(y_2012$Amount...5),
+                                      sum(y_2013$Amount...5)
+                                      )
+```
+количество заболевших
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...9) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1993$Amount...9) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1994$Amount...9) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1995$Amount...9)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1996$Amount...9)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1997$Amount...9)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1998$Amount...9)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_1999$Amount...9)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2000$Amount...9)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2001$Amount...9)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2002$Amount...9)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2003$Amount...9)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2004$Amount...9)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2005$Amount...9)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2006$Amount...9)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2007$Amount...9)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2008$Amount...9)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2009$Amount...9)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2010$Amount...9)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2011$Amount...9)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...8 == 'incidence'& Sex == 'fem')
+sum(y_2012$Amount...9)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...8 == 'incidence'v)
+sum(y_2013$Amount...9)
+
+year_rate_fem$Incidence <- c(sum(y_1993$Amount...9),
+                                      sum(y_1994$Amount...9),
+                                      sum(y_1995$Amount...9),
+                                      sum(y_1996$Amount...9),
+                                      sum(y_1997$Amount...9),
+                                      sum(y_1998$Amount...9),
+                                      sum(y_1999$Amount...9),
+                                      sum(y_2000$Amount...9),
+                                      sum(y_2001$Amount...9),
+                                      sum(y_2002$Amount...9),
+                                      sum(y_2003$Amount...9),
+                                      sum(y_2004$Amount...9),
+                                      sum(y_2005$Amount...9),
+                                      sum(y_2006$Amount...9),
+                                      sum(y_2007$Amount...9),
+                                      sum(y_2008$Amount...9),
+                                      sum(y_2009$Amount...9),
+                                      sum(y_2010$Amount...9),
+                                      sum(y_2011$Amount...9),
+                                      sum(y_2012$Amount...9),
+                                      sum(y_2013$Amount...9)
+                                      )
+
+```
+Сохраним получившийся датасет
+```{r}
+write_csv(year_rate_fem, file.path("year_rate_fem.csv"))
+```
+# сделаем дата-сет, в котором посчитаем суммарную популяцию, смертность и заболеваемость за каждый год для M
+популяция
+``` {r}
+# сделаем дата-сет, в которому посчитаем суммарную популяцию, смертность и заболеваемость за каждый год
+
+# общая популяция
+
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...6 == 'population' & Sex == 'male')
+sum(y_1993$Amount...7) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...6 == 'population'& Sex == 'male')
+sum(y_1994$Amount...7) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...6 == 'population'& Sex == 'male')
+sum(y_1995$Amount...7)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...6 == 'population'& Sex == 'male')
+sum(y_1996$Amount...7)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...6 == 'population'& Sex == 'male')
+sum(y_1997$Amount...7)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...6 == 'population'& Sex == 'male')
+sum(y_1998$Amount...7)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...6 == 'population'& Sex == 'male')
+sum(y_1999$Amount...7)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...6 == 'population'& Sex == 'male')
+sum(y_2000$Amount...7)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...6 == 'population'& Sex == 'male')
+sum(y_2001$Amount...7)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...6 == 'population'& Sex == 'male')
+sum(y_2002$Amount...7)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...6 == 'population'& Sex == 'male')
+sum(y_2003$Amount...7)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...6 == 'population'& Sex == 'male')
+sum(y_2004$Amount...7)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...6 == 'population'& Sex == 'male')
+sum(y_2005$Amount...7)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...6 == 'population'& Sex == 'male')
+sum(y_2006$Amount...7)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...6 == 'population'& Sex == 'male')
+sum(y_2007$Amount...7)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...6 == 'population'& Sex == 'male')
+sum(y_2008$Amount...7)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...6 == 'population'& Sex == 'male')
+sum(y_2009$Amount...7)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...6 == 'population'& Sex == 'male')
+sum(y_2010$Amount...7)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...6 == 'population'& Sex == 'male')
+sum(y_2011$Amount...7)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...6 == 'population'& Sex == 'male')
+sum(y_2012$Amount...7)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...6 == 'population'& Sex == 'male')
+sum(y_2013$Amount...7)
+
+year_rate_male <- data_frame(Year = c(1993:2013), Sex = "male",
+                       Population = c(sum(y_1993$Amount...7),
+                                      sum(y_1994$Amount...7),
+                                      sum(y_1995$Amount...7),
+                                      sum(y_1996$Amount...7),
+                                      sum(y_1997$Amount...7),
+                                      sum(y_1998$Amount...7),
+                                      sum(y_1999$Amount...7),
+                                      sum(y_2000$Amount...7),
+                                      sum(y_2001$Amount...7),
+                                      sum(y_2002$Amount...7),
+                                      sum(y_2003$Amount...7),
+                                      sum(y_2004$Amount...7),
+                                      sum(y_2005$Amount...7),
+                                      sum(y_2006$Amount...7),
+                                      sum(y_2007$Amount...7),
+                                      sum(y_2008$Amount...7),
+                                      sum(y_2009$Amount...7),
+                                      sum(y_2010$Amount...7),
+                                      sum(y_2011$Amount...7),
+                                      sum(y_2012$Amount...7),
+                                      sum(y_2013$Amount...7)
+                                      ))
+
+
+
+```
+смертность
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...5) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...2 == 'mortality' & Sex == 'male')
+sum(y_1993$Amount...5) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1994$Amount...5) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1995$Amount...5)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1996$Amount...5)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1997$Amount...5)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1998$Amount...5)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_1999$Amount...5)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2000$Amount...5)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2001$Amount...5)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2002$Amount...5)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2003$Amount...5)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2004$Amount...5)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2005$Amount...5)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2006$Amount...5)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2007$Amount...5)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2008$Amount...5)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2009$Amount...5)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2010$Amount...5)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2011$Amount...5)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2012$Amount...5)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...2 == 'mortality'& Sex == 'male')
+sum(y_2013$Amount...5)
+
+year_rate_male$Mortality <- c(sum(y_1993$Amount...5),
+                                      sum(y_1994$Amount...5),
+                                      sum(y_1995$Amount...5),
+                                      sum(y_1996$Amount...5),
+                                      sum(y_1997$Amount...5),
+                                      sum(y_1998$Amount...5),
+                                      sum(y_1999$Amount...5),
+                                      sum(y_2000$Amount...5),
+                                      sum(y_2001$Amount...5),
+                                      sum(y_2002$Amount...5),
+                                      sum(y_2003$Amount...5),
+                                      sum(y_2004$Amount...5),
+                                      sum(y_2005$Amount...5),
+                                      sum(y_2006$Amount...5),
+                                      sum(y_2007$Amount...5),
+                                      sum(y_2008$Amount...5),
+                                      sum(y_2009$Amount...5),
+                                      sum(y_2010$Amount...5),
+                                      sum(y_2011$Amount...5),
+                                      sum(y_2012$Amount...5),
+                                      sum(y_2013$Amount...5)
+                                      )
+```
+количество заболевших
+``` {r}
+# общая смертность
+sum(mor_pop$Amount...9) #3030420898
+#1993 year
+y_1993 <- filter(mor_pop, Year == 1993 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1993$Amount...9) #148145911
+y_1994 <- filter(mor_pop, Year == 1994 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1994$Amount...9) #148145911
+y_1995 <- filter(mor_pop, Year == 1995 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1995$Amount...9)
+
+y_1996 <- filter(mor_pop, Year == 1996 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1996$Amount...9)
+
+y_1997 <- filter(mor_pop, Year == 1997 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1997$Amount...9)
+
+y_1998 <- filter(mor_pop, Year == 1998 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1998$Amount...9)
+
+y_1999 <- filter(mor_pop, Year == 1999 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_1999$Amount...9)
+
+y_2000 <- filter(mor_pop, Year == 2000 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2000$Amount...9)
+
+y_2001 <- filter(mor_pop, Year == 2001 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2001$Amount...9)
+
+y_2002 <- filter(mor_pop, Year == 2002 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2002$Amount...9)
+
+y_2003 <- filter(mor_pop, Year == 2003 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2003$Amount...9)
+
+y_2004 <- filter(mor_pop, Year == 2004 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2004$Amount...9)
+
+y_2005 <- filter(mor_pop, Year == 2005 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2005$Amount...9)
+
+y_2006 <- filter(mor_pop, Year == 2006 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2006$Amount...9)
+
+y_2007 <- filter(mor_pop, Year == 2007 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2007$Amount...9)
+
+y_2008 <- filter(mor_pop, Year == 2008 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2008$Amount...9)
+
+y_2009 <- filter(mor_pop, Year == 2009 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2009$Amount...9)
+
+y_2010 <- filter(mor_pop, Year == 2010 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2010$Amount...9)
+
+y_2011 <- filter(mor_pop, Year == 2011 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2011$Amount...9)
+y_2012 <- filter(mor_pop, Year == 2012 & Type...8 == 'incidence'& Sex == 'male')
+sum(y_2012$Amount...9)
+
+y_2013 <- filter(mor_pop, Year == 2013 & Type...8 == 'incidence'v)
+sum(y_2013$Amount...9)
+
+year_rate_male$Incidence <- c(sum(y_1993$Amount...9),
+                                      sum(y_1994$Amount...9),
+                                      sum(y_1995$Amount...9),
+                                      sum(y_1996$Amount...9),
+                                      sum(y_1997$Amount...9),
+                                      sum(y_1998$Amount...9),
+                                      sum(y_1999$Amount...9),
+                                      sum(y_2000$Amount...9),
+                                      sum(y_2001$Amount...9),
+                                      sum(y_2002$Amount...9),
+                                      sum(y_2003$Amount...9),
+                                      sum(y_2004$Amount...9),
+                                      sum(y_2005$Amount...9),
+                                      sum(y_2006$Amount...9),
+                                      sum(y_2007$Amount...9),
+                                      sum(y_2008$Amount...9),
+                                      sum(y_2009$Amount...9),
+                                      sum(y_2010$Amount...9),
+                                      sum(y_2011$Amount...9),
+                                      sum(y_2012$Amount...9),
+                                      sum(y_2013$Amount...9)
+                                      )
+
+```
+Сохраним получившийся датасет
+```{r}
+write_csv(year_rate_male, file.path("general_pmi_male.csv"))
+```
+
+#Point prevalence
+```{r}
+#in general
+general_pmi$p_prevalence <- general_pmi$Incidence/general_pmi$Population
+
+#female
+year_rate_fem$p_prevalence <- year_rate_fem$Incidence/year_rate_fem$Population
+
+#male
+year_rate_male$p_prevalence <- year_rate_male$Incidence/year_rate_male$Population
+```
+Risk - 
+```{r}
+gen_risk <- sum(general_pmi$Incidence) / sum(general_pmi$Population)
+fem_risk <- sum(year_rate_fem$Incidence) / sum(year_rate_fem$Population)
+m_risk <- sum(year_rate_male$Incidence) / sum(year_rate_male$Population)
+```
+
+Odds of disease
+```{r}
+gen_odds <- sum(general_pmi$Incidence) / sum((general_pmi$Population - sum(general_pmi$Incidence)))
+fem_odds <- sum(year_rate_fem$Incidence) / sum((year_rate_fem$Population - sum(year_rate_fem$Incidence)))
+m_odds <- sum(year_rate_male$Incidence) / sum((year_rate_male$Population - sum(year_rate_male$Incidence)))
+```
+
+Plot mortality depending on year
+```{r}
+
+# графики смертность на 100 000 человек, без учета возрастного коэффициента
+plot_mort <- ggplot(mor_pop, aes(x = Year, y = Mort_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex) +
+  theme_minimal()
+
+plot_mort_st <- ggplot(mor_pop, aes(x = Year, y = Mort_rate_st, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+plot_mort_st <- ggplot(mor_pop, aes(x = Year, y = Mort_rate_st, colour = Age)) +
+  geom_smooth() + facet_grid(.~Sex)+
+  theme_minimal()
+plot_mort
+```
+
+Plot mortality заб on year
+```{r}
+# графики заболеваемости на 100 000 человек, без учета возрастного коэффициента
+plot_incid <- ggplot(mor_pop, aes(x = Year, y = Incid_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+
+plot_incid_st <- ggplot(mor_pop, aes(x = Year, y = Incid_rate_st, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+plot_mort
+```
+Death rate
+```{r}
+mor_pop$death_rate <- (mor_pop$Amount...5) / (mor_pop$Amount...9)
+mor_pop[is.character(mor_pop)] <- 0
+
+plot_death_rate <- ggplot(mor_pop, aes(x = Year, y = death_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)
+
+plot_death_rate <- ggplot(mor_pop, aes(x = Year, y = death_rate)) +
+  geom_boxplot() + facet_grid(.~Age)
+```
+
+```{r}
+
+```
