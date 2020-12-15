@@ -1,0 +1,71 @@
+---
+title: "GLM cancer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+
+mort <- read_csv("Bioinf/statistics_r/cancer/data/mort_incid.csv")
+```
+
+```{r}
+mort$Age <- as.factor(mort$Age)
+mort$Sex <- as.factor(mort$Sex)
+mort$Type <- as.factor(mort$Type)
+mort$Year <- as.factor(mort$Year)
+str(mort)
+```
+
+```{r}
+library(ggplot2); theme_set(theme_bw()); library(cowplot)
+
+
+Pl_Age <- ggplot(mort, aes(x = Age, y = Amount)) + geom_boxplot()
+Pl_Sex <- ggplot(mort, aes(x = Sex, y = Amount)) + geom_boxplot()
+
+ggplot(mort, aes(y = 1:nrow(mort))) + geom_point(aes(x = Amount) )
+
+
+```
+```{r}
+# mortality = 1 incidence = 0
+mort$Type <- ifelse(test = mort$Sex == 'mortality', yes = 1, no = 0)
+mort$Type <- as.factor(mort$Type)
+
+```
+
+
+
+```{r}
+mod <- glm(Type ~ ., family = binomial(link = 'logit'), data = mort)
+
+mod_1 <- glm(Type ~ Age * Sex, family = binomial(link = 'logit'), data = mort)
+
+library(car)
+Anova(mod)
+```
+
+
+```{r}
+mod_2 <- glm(Type ~ Age + Sex, family = binomial(link = 'logit'), data = mort)
+mod_3 <- glm(Type ~ Sex, family = binomial(link = 'logit'), data = mort)
+mod_4 <- glm(Type ~ Age, family = binomial(link = 'logit'), data = mort)
+```
+
+```{r}
+
+```
+
+```{r}
+result <- csu_ageSpecific(incidence, var_age=, var_cases=data$Amount)
+
+
+```
+
+
+
