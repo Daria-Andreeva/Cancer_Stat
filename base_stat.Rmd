@@ -1,0 +1,502 @@
+---
+title: "Base stat"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Пакеты
+
+```{r}
+library(readr)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+library(car)
+library(readr)
+library(Rcan)
+setwd("~/Bioinf/statistics_r/cancer/data")
+data <- read_csv("all_data.csv")
+
+#Доля определенной возрастной группы в идеальной популяции
+ASR <- read_csv("ASR_1.csv")
+
+general_pmi <- read_csv("general_pmi.csv")
+year_rate_fem <- read_csv("year_rate_fem.csv")
+year_rate_male <- read_csv("general_pmi_male.csv")
+Age_rate <- read_csv("Age_rate.csv")
+```
+
+
+```{r}
+##Меняем тип вектора на факторы
+data$Type <- as.factor(data$Type)
+data$Sex <- as.factor(data$Sex)
+data$Age <- as.factor(data$Age)
+```
+
+``` {r}
+#новый датасет длинного типа
+mortality <- filter(data, Type == 'mortality')
+population <- filter(data, Type == 'population')
+incidence <- filter(data, Type == 'incidence')
+mor_pop <- bind_cols(mortality, population[,c(2,5)], incidence[,c(2,5)])
+#mor_pop <- mor_pop[,c(1:5, 7, 10, 12, 15)]
+summary(mor_pop)
+
+summary(mortality)
+summary(population)
+summary(incidence)
+
+round(sum(mortality$Amount))
+round(sum(incidence$Amount))
+
+mor_pop$Birth <- mor_pop$Year - mor_pop$Age
+```
+Всего зарегистрировано больше ```{r}round(sum(population$Amount)/1000000)``` миллионов человек. Из них ```{r}round(sum(incidence$Amount))``` заболевших и ```{r}round(sum(mortality$Amount))``` умерших с 1995 по 2013 года. 
+
+###### Базовая статистика
+
+Анализ распределения смертности
+```{r}
+qq_mortality <- ggplot(mortality, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of observations \naccording to Rings number",
+       y = "Rings") +
+theme_classic()
+
+density_mortality <- ggplot(mortality, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_mortality <- ggplot(mortality, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_mortality <- grid.arrange(qq_mortality, density_mortality,
+                           box_mortality, ncol = 2)
+```
+
+Анализ распределения incidence
+```{r}
+qq_incidence <- ggplot(incidence, aes(sample = Amount)) +  #qq plot 
+  stat_qq() +
+  stat_qq_line(colour = "red") +
+  labs(title="Distribution of incidence",
+       y = "incidence") +
+theme_classic()
+
+density_incidence <- ggplot(incidence, aes(x = Amount)) + #density plot
+  geom_density() + 
+    geom_vline(aes(xintercept=median(Amount),         
+                 color="Median"), linetype="dashed",
+             size=1) +
+  geom_vline(aes(xintercept=mean(Amount),
+                 color="Mean"), linetype="dashed",
+             size=1) +
+  scale_color_manual(name = "statistics", values = c(Median = "blue", Mean = "red")) +
+theme_classic()
+  
+box_incidence <- ggplot(incidence, aes(y = Amount)) +  #box plot
+  geom_boxplot() +
+theme_classic()
+
+plot_incidence <- grid.arrange(qq_incidence, density_incidence,
+                           box_incidence, ncol = 2)
+```
+
+Связь между заболеваемостью и возрастом
+```{r}
+incidence <- data %>% 
+  filter(Type == 'incidence')
+# количество заболевших в зависимости от возраста
+ggplot(data = incidence, aes(y = Amount, x = Age)) + #incidence
+  geom_boxplot() +
+  facet_grid(.~Sex)
+
+# количество заболевших в зависимости от года
+ggplot(data = incidence, aes(y = Amount)) + #incidence
+  geom_boxplot() +
+  facet_grid(.~Year)
+
+ggplot(data = incidence, aes(y = Amount, x = Age, color = Year)) + #incidence
+  geom_line() 
+
+
+pl <- ggplot(data = mor_pop, aes(y = mor_pop$Amount...9 , x = Age)) + #incidence
+  geom_density() + 
+ facet_grid(.~Sex)
+  
+pl_2 <- ggplot(data = mor_pop, aes(x = mor_pop$Amount...9, y = Age)) + #incidence
+  geom_smooth() + 
+ facet_grid(.~Sex)
+
+#cor.test(mor_pop, Amount...9 ~Age, method="spearman") - ругается, что вектора разной длины
+
+#age_mod <- lm(formula = Amount...9 ~ Age, data = mor_pop)
+#summary(age_mod)
+
+```
+
+###Скорректированные по возрасту коэффициенты заболеваемости (AAIR) стандартизированная смертность 
+```{r}
+
+
+# стандартизированная смертность на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Mort_rate <- (mor_pop$Amount...5/mor_pop$Amount...7*100000)
+
+mor_pop$Mort_rate_st <- mor_pop$Mort_rate * ASR$Rate
+# с учетом коэффициента
+
+#стандартизированная заболеваемость на 100 000 человек, без учета возрастного коэффициента
+mor_pop$Incid_rate <- (mor_pop$Amount...9/mor_pop$Amount...7*100000)
+# с учетом коэффициента
+mor_pop$Incid_rate_st <- mor_pop$Incid_rate * ASR$Rate
+```
+
+
+
+
+### Point prevalence (точечная распространенность)
+#Point prevalence
+```{r}
+#in general
+general_pmi$p_prevalence <- general_pmi$Incidence/general_pmi$Population
+
+#female
+year_rate_fem$p_prevalence <- year_rate_fem$Incidence/year_rate_fem$Population
+
+#male
+year_rate_male$p_prevalence <- year_rate_male$Incidence/year_rate_male$Population
+```
+Risk - это не настоящий риск, тот считается в человеко-годах
+```{r}
+gen_risk <- sum(general_pmi$Incidence) / sum(general_pmi$Population)
+fem_risk <- sum(year_rate_fem$Incidence) / sum(year_rate_fem$Population)
+m_risk <- sum(year_rate_male$Incidence) / sum(year_rate_male$Population)
+```
+
+Odds of disease
+```{r}
+gen_odds <- sum(general_pmi$Incidence) / sum((general_pmi$Population - sum(general_pmi$Incidence)))
+fem_odds <- sum(year_rate_fem$Incidence) / sum((year_rate_fem$Population - sum(year_rate_fem$Incidence)))
+m_odds <- sum(year_rate_male$Incidence) / sum((year_rate_male$Population - sum(year_rate_male$Incidence)))
+```
+
+Plot mortality depending on year
+```{r}
+
+# графики смертность на 100 000 человек, без учета возрастного коэффициента
+plot_mort <- ggplot(mor_pop, aes(x = Year, y = Mort_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex) +
+  theme_minimal()
+
+plot_mort_st <- ggplot(mor_pop, aes(x = Year, y = Mort_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() + facet_grid(.~Sex) +
+  labs(title="Показатели смертности от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент смертности,\nна 100 тыс. человек") + 
+  theme_minimal()
+plot_mort
+
+
+under_40 <- mor_pop[c(190:378, 568:756),]
+plot_mort_st <- ggplot(under_40, aes(x = Year, y = Mort_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() + facet_grid(.~Sex) +
+  labs(title="Показатели смертности от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент смертности,\nна 100 тыс. человек")+ 
+  theme_minimal()
+
+fem <- under_40 %>% filter(Sex == 'fem')
+male <- under_40 %>% filter(Sex == 'male')
+
+ggplot(fem, aes(x = Year, y = Mort_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() +
+  labs(title="Показатели смертности от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент смертности женщин,\nна 100 тыс. человек")+ 
+  theme_minimal()
+
+
+ggplot(male, aes(x = Year, y = Mort_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() +
+  labs(title="Показатели смертности от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент смертности мужчин,\nна 100 тыс. человек")+ 
+  theme_minimal()
+
+```
+Интересно, что для мужчин 45-49 лет около 0,5, потом повышается до 65-69 (1,8), а затем снова снижается и достигает минимума в 85 лет.
+
+
+Графики заболеваемости и смертности на 100 000 человек
+```{r}
+# графики заболеваемости на 100 000 человек, без учета возрастного коэффициента
+ggplot(mor_pop, aes(x = Year, y = Incid_rate, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+# графики заболеваемости на 100 000 человек, с учетом возрастного коэффициента
+ggplot(mor_pop, aes(x = Year, y = Incid_rate_st, colour = Age)) +
+  geom_line() + facet_grid(.~Sex)+
+  theme_minimal()
+
+```
+Death rate
+```{r}
+ggplot(mor_pop, aes(x = Year, y = Incid_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() + facet_grid(.~Sex) +
+  labs(title="Показатели заболеваемости от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент заболеваемости,\nна 100 тыс. человек") + 
+  theme_minimal()
+
+
+
+ggplot(under_40, aes(x = Year, y = Incid_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() + facet_grid(.~Sex) +
+  labs(title="Показатели заболеваемости от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент заболеваемости,\nна 100 тыс. человек")+ 
+  theme_minimal()
+
+fem <- under_40 %>% filter(Sex == 'fem')
+male <- under_40 %>% filter(Sex == 'male')
+
+ggplot(fem, aes(x = Year, y = Incid_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() +
+  labs(title="Показатели заболеваемости от рака пищевода\n в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент\n заболеваемости женщин,на 100 тыс. человек")+ 
+  theme_minimal()
+
+
+ggplot(male, aes(x = Year, y = Incid_rate_st, colour = Age, cex.lab = 0.3)) +
+  geom_smooth() +
+  labs(title="Показатели заболеваемости от рака пищевода в России за 1995-2013гг.", x = "Год", y = "Стандартизированный коэффициент заболеваемости мужчин,\nна 100 тыс. человек")+ 
+  theme_minimal()
+```
+
+## Модель с учетом возраста и пола. 
+```{r}
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(mor_pop))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(mor_pop)), size = smp_size)
+
+train <- mor_pop[train_ind, ]
+test <- mor_pop[-train_ind, ]
+
+# do model
+mod <- glm(Incid_rate_st ~ Sex * Age * Year, data = train)
+
+# look through 
+sigma(mod)
+# residuals
+resid(mod, type = 'response')[1:5]
+mod_n <- glm(Incid_rate_st ~ Sex + Age + Year, data = train)
+
+gg_resid <- ggplot(data = fortify(mod), aes(x = .fitted, y = .stdresid)) +
+geom_point() + geom_hline(yintercept = 0)
+gg_resid
+
+ggplot(data = fortify(mod), aes(x = Age, y = .stdresid)) +
+geom_point() + geom_hline(yintercept = 0)
+
+# мы видим гетероскедастичность, попробуем прологарифмировать значние
+train$log_inc <- log((train$Incid_rate_st + 1))
+
+# do model
+mod_1 <- glm(log_inc ~ Sex * Age * Year, data = train)
+
+# look through 
+sigma(mod_1)
+
+
+gg_resid <- ggplot(data = fortify(mod_1), aes(x = .fitted, y = .stdresid)) +
+geom_point() + geom_hline(yintercept = 0)
+gg_resid
+
+ggplot(data = fortify(mod_1), aes(x = Age, y = .stdresid)) +
+geom_point() + geom_hline(yintercept = 0)
+summary(mod_1)
+
+null_model <- glm(log_inc ~ 1, data = train)
+anova(null_model, mod_1, test = 'Chi')
+drop1(mod_1, test='Chi')
+# модель значима 
+
+```
+Predictions
+
+```{r}
+
+Predictions <- predict(mod_1, newdata = test, se.fit = TRUE)
+test$fit <- Predictions$fit # Предсказанные значения
+test$se <- Predictions$se.fit # Стандартные ошибки
+t_crit <- qt(0.975, df = nrow(mor_pop) - length(coef(mod_1))) # t для дов. инт.
+test$lwr <- test$fit - t_crit * test$se
+test$upr <- test$fit + t_crit * test$se
+
+Plot <- ggplot(test, aes(x = Year, y = fit)) +
+geom_ribbon(alpha = 0.2, aes(ymin = lwr, ymax = upr, group = Age)) +
+geom_line(aes(colour = Age), size = 1) +
+geom_point(data = mor_pop, aes(x = Year, y = log_inc, colour = Age)) +
+  facet_grid(.~Sex)
+
+
+```
+
+```{r}
+mod_1 <- glm(log_inc ~ Sex * Age * Year, data = train)
+null_model <- glm(log_inc ~ 1, data = train)
+mod_no_int <- glm(log_inc ~ Sex + Age + Year, data = train)
+mod_sex_age <- glm(log_inc ~ Sex * Age, data = train)
+mod_sex_age_1 <- glm(log_inc ~ Sex + Age, data = train)
+mod_age <- glm(log_inc ~  Age, data = train)
+mod_sex <- glm(log_inc ~ Sex, data = train)
+AIC(mod_1, null_model, mod_no_int, mod_sex_age, mod_sex_age_1, mod_age, mod_sex)
+# лучшая модель mod_1
+```
+Визуализация и предсказания
+```{r}
+new_data <- train %>%  group_by(Age) %>%  do(data.frame(Year = seq(min(.$Year), 2020)))
+new_data$Sex = 'fem'
+new_data$Sex[1:247] = 'male'
+
+Predictions <- predict(mod_1, newdata = new_data, se.fit = TRUE)
+new_data$fit <- Predictions$fit # Предсказанные значения
+new_data$se <- Predictions$se.fit # Стандартные ошибки
+t_crit <- qt(0.975, df = nrow(incidence) - length(coef(mod))) # t для дов. инт.
+new_data$lwr <- new_data$fit - t_crit * new_data$se
+new_data$upr <- new_data$fit + t_crit * new_data$se
+
+ggplot(new_data, aes(x = Year, y = fit)) +
+geom_ribbon(alpha = 0.2, aes(ymin = lwr, ymax = upr, group = Age)) +
+geom_line(aes(colour = Age), size = 1) +
+  facet_grid(.~Sex)
+```
+##Общая модель
+```{r}
+library(Rcan)
+csu_ageSpecific(data_18, var_age='Age',
+                var_cases='Incidence',
+                var_py='Population')
+
+asr <- csu_asr(data_18,
+        var_age='Age',
+        var_cases='Incidence',
+        var_py='Population',
+        group_by=c('Year', 'Sex'),
+        last_age=18,
+        pop_base='SEGI')
+
+asr_mort <- csu_asr(data_18,
+        var_age='Age',
+        var_cases='Mortality',
+        var_py='Population',
+        group_by=c('Year', 'Sex'),
+        last_age=18,
+        pop_base='SEGI')
+
+csu_time_trend(asr, var_trend='Incidence',
+               var_year='Year',
+               group_by='Sex',
+               ytitle = "Age standardized rate per 100,000",
+               plot_title = "Esophageal cancer incidence",
+               smoothing=0.3,
+               color_trend = c('#a0a0a0', '#000000'))
+
+csu_time_trend(asr_mort, var_trend='Mortality',
+               var_year='Year',
+               group_by='Sex',
+               ytitle = "Age standardized rate per 100,000",
+               plot_title = "Esophageal cancer mortality",
+               smoothing=0.3,
+               color_trend = c('#a0a0a0', '#000000'))
+
+pl_3 <- grid.arrange(pl_1, pl_2)
+
+csu_ageSpecific(data_18,
+                var_age="Age",
+       	   var_cases="Incidence",
+           var_py="Population",
+           group_by='Sex',
+          
+          plot_title = "Esophageal cancer incidence",
+           color_trend = c('#a0a0a0', '#000000'))
+
+csu_ageSpecific(data_18,
+                var_age="Age",
+       	   var_cases="Mortality",
+           var_py="Population",
+           group_by='Sex',
+           plot_title = "Esophageal cancer mortality",
+           color_trend = c('#a0a0a0', '#000000'))
+```
+
+```{r}
+library(devtools)
+devtools::install_github("https://github.com/haraldwf/nordpred")
+library(nordpred)
+
+source("nordpred.S")
+setwd("~/Downloads/data")
+# Reading data (Colon cancer for Norwegian males)
+indata <- read.table("colon-men-Norway.csv",header =T,sep=",",row.names=1)
+inpop1 <- read.table("data//men-Norway.txt",header =T,sep=",",row.names=1)
+inpop2 <- read.table("data//men-Norway-pred.txt",header =T,sep=",",row.names=1)
+
+# Include possible population predictions
+inpop <- cbind(inpop1,inpop2)
+head(inpop)
+# Run predictions:
+est <- nordpred.estimate(cases=indata,pyr=inpop,noperiod=4,startestage=5)
+res <- nordpred.prediction(est,startuseage=6,cuttrend=c(0,.25,.5,.75,.75),recent=T)
+
+incidence_female
+population_female
+cases <- nordpred.estimate(cases = incidence_female, pyr=population_female, noperiod=4, startestage=0,linkfunc = 'poisson')
+res <- nordpred(cases=incidence_female,pyr=population_female,startestage=5,startuseage=0,noperiods=7,cuttrend=c(0,.25,.5,.75,.75))
+
+# This can also be done in one command:
+res <- nordpred(cases=indata,pyr=inpop,startestage=5,startuseage=6,noperiods=4,cuttrend=c(0,.25,.5,.75,.75))
+
+# The "nordpred"-function can also choose number periods to base predictions on:
+  # This is done by listing candidate number of periods in "noperiods". 
+  # If the goodness of fit test is rejected based on the widest base, 
+  # the first period is exclude etc.
+res <- nordpred(indata,inpop,startestage=5,startuseage=6,noperiods=4:6,cuttrend=c(0,.25,.5,.75,.75))
+
+
+# Or with poisson link function (instead of the powerlink as used in the nordpred predictions):
+est2 <- nordpred.estimate(indata,inpop,4,5,linkfunc="poisson")
+res2 <- nordpred.prediction(est2,startuseage=6,cuttrend=c(0,.25,.5,.75,.75),recent=T)
+
+# Get results:
+print.nordpred(res)
+nordpred.getpred(res)
+summary(res,printpred=F)
+
+# Get results with standardisation:
+wstand <- c(0.12, 0.1, 0.09, 0.09, 0.08, 0.08, 0.06, 0.06, 0.06, 0.06,0.05, 
+            0.04, 0.04, 0.03, 0.02, 0.01, 0.005, 0.005)
+            
+round(nordpred.getpred(res,incidence=T,standpop=NULL),2)
+round(nordpred.getpred(res,incidence=T,standpop=wstand),2)
+
+# Plot results:
+plot(res,standpop=wstand)
+
+# Plot results with power5 and poisson links:
+plot(res2,standpop=wstand)
+plot(res,new=F,lty=c(1,2),standpop=wstand)
+
+# Different cut trend scenarios, using average drift (recent=F):
+plot(nordpred.prediction(est,startuseage=6,cuttrend=c(0,0,0,0,0),recent=F),standpop=wstand,new=T)
+plot(nordpred.prediction(est,startuseage=6,cuttrend=c(1,1,1,1,1),recent=F),standpop=wstand,new=F,lty=c(1,2))
+plot(nordpred.prediction(est,startuseage=6,cuttrend=c(0,.25,.5,.75,.75),recent=F),standpop=wstand,new=F,lty=c(1,4))
+
+
+```
