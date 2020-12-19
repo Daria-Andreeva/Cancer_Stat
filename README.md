@@ -1,6 +1,8 @@
 # ESOPHAGEAL CANCER INCIDENCE AND MORTALITY TRENDS IN RUSSIA 1993-2018
 First semestr project (Institute of Bioinformatics)
 
+Esophageal cancer (EC) is the eighth most common cancer worldwide and the sixth leading cause of cancer related mortality1. The aim of this study is to analyze changes in EC incidence and mortality trends using data from the Russian State Cancer Registry.
+
 ## Goal: 
 to assess trends in the incidence and survival of esophageal cancer among the population of Russia from 1993 to 2018.
 
@@ -14,5 +16,20 @@ to assess trends in the incidence and survival of esophageal cancer among the po
 Data was obtained from National Cancer Register (http://www.cancer-reg.ru/).
   
 ### Methods
-  All analyses were performed in R (version 3.6.3, 2020-02-29)), using packages "Epi" (version 2.0), ‘Rcan’ (version 1.3.82), ‘prophet’ (version 0.6.1), 'tidyr' (version 1.1.2), 'tsibble' (version 0.9.3).
-
+  All analyses were performed in R (version 3.6.3, 2020-02-29)), using packages:
+  ‘tidyr‘ (version 1.1.2) - data merging, statistical summaries
+  ‘Epi‘ (version 2.0)  - statistic analysis and visualization, statistical summaries
+  ‘Rcan’ (version 1.3.82) - statistic analysis and visualization, statistical summaries
+  ‘tsibble‘ (version 0.9.3) - modelling
+  'feast' (version 0.1.6) - statistical summaries, modelling
+  'dtwclust' (version 5.5.6) - modelling
+  ‘prophet’ (version 0.6.1) - visualization
+  'plotly' (version 4.9.2.2) - visualization
+  'ggplot2' (version 3.3.2) - visualization
+  
+### Summary
+This study is the first broad assessment of esophageal cancer incidence and mortality patterns and trends from the State Cancer Registry of Russia. The results revealed substantial changes in trends of esophageal cancer in Russia during the past decades. 
+The increasing risk of EC can partly be explained by 
+      ~ changes in the current Siewert classification
+      ~ continuing trends of population aging and growth. 
+These results should be used as an aid to setting cancer control priorities in Russia, including the need for the implementation of effective and cost-effect screening and prevention programs, as well the planning of future cancer services based on an allocation of finite resources to ensure their operationalization.
