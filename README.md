@@ -36,7 +36,7 @@ These results should be used as an aid to setting cancer control priorities in R
 
 
 ### File guide
-## Data:
+#### Data:
 1. all_data.csv - data from cancer-register (data has been revised and presented in a convenient form)
 2. data.csv - data presented for Rcan package 
 3. ASR_1.csv - data from WHO website, standardized population data in the World
@@ -44,7 +44,7 @@ These results should be used as an aid to setting cancer control priorities in R
 23110000100030200004_Численность_постоянного_населения_-_женщин_по_возрасту_на_1_января.xlsx - data from Federal State Statistic Service, standardized population data in Russia
 
 
-## Analysis:
+#### Analysis:
 1. base_stat.Rmd and .html - ASMR and ASIR, changes in incidence and mortality trends.
 2. glm.Rmd - trying to build glmodel, a pattern in residuals - is not good model.
 3. Time_series_cancer - time series analysis,good model, predictions for 10 years.
