@@ -1,7 +1,7 @@
 # ESOPHAGEAL CANCER INCIDENCE AND MORTALITY TRENDS IN RUSSIA 1993-2018
 First semestr project (Institute of Bioinformatics)
 
-Esophageal cancer (EC) is the eighth most common cancer worldwide and the sixth leading cause of cancer related mortality1. The aim of this study is to analyze changes in EC incidence and mortality trends using data from the Russian State Cancer Registry.
+Esophageal cancer (EC) is the eighth most common cancer worldwide and the sixth leading cause of cancer related mortality. The aim of this study is to analyze changes in EC incidence and mortality trends using data from the Russian State Cancer Registry.
 
 ## Goal: 
 to assess trends in the incidence and survival of esophageal cancer among the population of Russia from 1993 to 2018.
@@ -33,8 +33,8 @@ The increasing risk of EC can partly be explained by
       ~ changes in the current Siewert classification
       ~ continuing trends of population aging and growth. 
 These results should be used as an aid to setting cancer control priorities in Russia, including the need for the implementation of effective and cost-effect screening and prevention programs, as well the planning of future cancer services based on an allocation of finite resources to ensure their operationalization.
-
-
+ (For further information read theses - https://docs.google.com/document/d/1srghT3JJXoBFfyHCq2I0DNRrmpCqBI_wN2kPsKGJ4Nk/edit?usp=sharing)
+ 
 ### File guide
 #### Data:
 1. all_data.csv - data from cancer-register (data has been revised and presented in a convenient form)
