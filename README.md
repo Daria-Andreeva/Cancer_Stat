@@ -33,7 +33,8 @@ The increasing risk of EC can partly be explained by
       ~ changes in the current Siewert classification
       ~ continuing trends of population aging and growth. 
 These results should be used as an aid to setting cancer control priorities in Russia, including the need for the implementation of effective and cost-effect screening and prevention programs, as well the planning of future cancer services based on an allocation of finite resources to ensure their operationalization.
- (For further information read theses - https://docs.google.com/document/d/1srghT3JJXoBFfyHCq2I0DNRrmpCqBI_wN2kPsKGJ4Nk/edit?usp=sharing)
+ 
+ (For further information - https://cutt.ly/4hCn1RH)
  
 ### File guide
 #### Data:
